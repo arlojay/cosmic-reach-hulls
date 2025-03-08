@@ -1,12 +1,12 @@
 {
-  "name": "mymod",
+  "name": "cosmic-reach-hulls",
   "version": "1.0.0",
   "description": "",
-  "author": "YOUR NAME HERE",
+  "author": "arlojay",
 
   "main": "dist/index.js",
   "scripts": {
-    "launch": "echo Error: no Cosmic Reach launch command specified",
+    "launch": "cd %HOMEPATH%\\Desktop\\cosmic-reach && node index",
     "build": "npx tsc && node dist/index",
     "game": "npm run build && npm run launch"
   },
