@@ -1,0 +1,25 @@
+{
+  "name": "mymod",
+  "version": "1.0.0",
+  "description": "",
+  "author": "YOUR NAME HERE",
+
+  "main": "dist/index.js",
+  "scripts": {
+    "launch": "echo Error: no Cosmic Reach launch command specified",
+    "build": "npx tsc && node dist/index",
+    "game": "npm run build && npm run launch"
+  },
+  "keywords": ["cosmic-reach", "game-mod"],
+  "license": "Apache-2.0 license",
+  "dependencies": {
+    "cosmic-reach-dag": "^1.1.2",
+    "three": "^0.173.0",
+    "@types/three": "^0.173.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3"
+  }
+}

@@ -1,0 +1,14 @@
+{
+    "esm": true,
+    "experimentalSpecifierResolution": "node",
+    "compilerOptions": {
+        "module": "commonjs",
+        "esModuleInterop": true,
+        "target": "ESNext",
+        "moduleResolution": "node",
+        "outDir": "dist"
+    },
+    "lib": [
+        "es2015"
+    ]
+}
