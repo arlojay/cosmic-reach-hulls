@@ -1,5 +1,6 @@
 import { Block, BlockModel, BlockState, Direction, Directions, Identifier, loadBlockbenchModel, Mod, Writer } from "cosmic-reach-dag";
-import { cablePaneling, corrugatedMetal, grate, industrialFan, industrialBulb, railing, structuralMetal, grateStairs, scaffolding } from "./blocks";
+import { cablePaneling, corrugatedMetal, grate, industrialFan, industrialBulb, railing, structuralMetal, grateStairs, scaffolding, concrete } from "./blocks";
+import { pipes } from "./pipe";
 
 const mod = new Mod("hulls");
 const writer = new Writer(mod, false);
@@ -231,6 +232,9 @@ async function main() {
     await industrialBulb(mod);
     await grateStairs(mod);
     await scaffolding(mod);
+    await concrete(mod);
+
+    await pipes(mod);
 
     writer.write(process.env.LOCALAPPDATA + "/cosmic-reach/mods/");
 }

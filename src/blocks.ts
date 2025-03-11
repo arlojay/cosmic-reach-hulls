@@ -20,10 +20,13 @@ export async function structuralMetal(mod: Mod) {
 
     block.createDefaultLangKey().addTranslation("Structural Metal", LangKeyLanguage.en_us);
 
-    createOmnidirectionalRotations(
-        block,
-        await loadBlockbenchModel(mod, "structural_metal", "./assets/models/structural-metal.bbmodel")
-    );
+    const model = await loadBlockbenchModel(mod, "structural_metal", "./assets/models/structural-metal.bbmodel");
+    for(const cuboid of model.getCuboids()) {
+        for(const face of cuboid.getAllFaces()) {
+            face.receiveAO = true;
+        }
+    }
+    createOmnidirectionalRotations(block, model);
 }
 
 export async function grate(mod: Mod) {
@@ -58,6 +61,20 @@ export async function corrugatedMetal(mod: Mod) {
     model.addTextureOverride(corrugatedMetalTexture, "all")
     model.addTextureOverride(corrugatedMetalTexture, "slab_side");
     model.addTextureOverride(corrugatedMetalTexture, "stair_side");
+
+    createShapeVariants(block, model);
+}
+
+export async function concrete(mod: Mod) {
+    const block = mod.createBlock("concrete");
+    block.createDefaultLangKey().addTranslation("Concrete", LangKeyLanguage.en_us);
+
+    const model = mod.createBlockModel("concrete");
+    model.setParent(new Identifier("base", "cube"));
+    
+    const concreteTexture = await Texture.loadFromFile("concrete", "./assets/textures/concrete.png");
+
+    model.addTextureOverride(concreteTexture, "all");
 
     createShapeVariants(block, model);
 }
@@ -143,19 +160,34 @@ export async function industrialBulb(mod: Mod) {
 }
 
 export async function grateStairs(mod: Mod) {
-    const block = mod.createBlock("grate_stairs");
+    const supportedStairs = mod.createBlock("supported_grate_stairs");
 
-    block.createDefaultLangKey().addTranslation("Grate Stairs", LangKeyLanguage.en_us);
-    block.fallbackParams = {
+    supportedStairs.createDefaultLangKey().addTranslation("Grate Stairs", LangKeyLanguage.en_us);
+    supportedStairs.fallbackParams = {
         isOpaque: false,
         lightAttenuation: 1
     };
 
-    const model = await loadBlockbenchModel(mod, "grate_stairs", "./assets/models/grate-stairs.bbmodel");
+    const supportedStairsModel = await loadBlockbenchModel(mod, "supported_grate_stairs", "./assets/models/supported-grate-stairs.bbmodel");
 
-    model.cullsSelf = false;
+    supportedStairsModel.cullsSelf = false;
     
-    createNativeRotations(block, model);
+    createNativeRotations(supportedStairs, supportedStairsModel);
+
+
+    const stairs = mod.createBlock("grate_stairs");
+
+    stairs.createDefaultLangKey().addTranslation("Grate Stairs", LangKeyLanguage.en_us);
+    stairs.fallbackParams = {
+        isOpaque: false,
+        lightAttenuation: 1
+    };
+
+    const stairsModel = await loadBlockbenchModel(mod, "grate_stairs", "./assets/models/grate-stairs.bbmodel");
+
+    stairsModel.cullsSelf = false;
+    
+    createNativeRotations(stairs, stairsModel);
 }
 
 export async function scaffolding(mod: Mod) {
@@ -190,4 +222,38 @@ export async function scaffolding(mod: Mod) {
     horizontalModel.transparent = true;
 
     createNativeRotations(horizontalScaffolding, horizontalModel);
+}
+
+export async function pipes(mod: Mod) {
+    const straightPipe = mod.createBlock("brass_straight_pipe");
+
+    straightPipe.createDefaultLangKey().addTranslation("Straight Pipe", LangKeyLanguage.en_us);
+    straightPipe.fallbackParams = {
+        isOpaque: false
+    };
+
+    const straightPipeModel = await loadBlockbenchModel(mod, "brass_pipe_straight", "./assets/models/brass-pipe.bbmodel");
+    straightPipeModel.rotateX(90);
+
+    straightPipeModel.cullsSelf = true;
+    straightPipeModel.transparent = true;
+
+    createOmnidirectionalRotations(straightPipe, straightPipeModel);
+
+
+    
+    const cornerPipe = mod.createBlock("brass_corner_pipe");
+
+    cornerPipe.createDefaultLangKey().addTranslation("Corner Pipe", LangKeyLanguage.en_us);
+    cornerPipe.fallbackParams = {
+        isOpaque: false
+    };
+
+    const cornerPipeModel = await loadBlockbenchModel(mod, "brass_pipe_corner", "./assets/models/brass-pipe-corner.bbmodel");
+    cornerPipeModel.rotateX(90);
+
+    cornerPipeModel.cullsSelf = true;
+    cornerPipeModel.transparent = true;
+
+    createOmnidirectionalRotations(cornerPipe, cornerPipeModel);
 }
