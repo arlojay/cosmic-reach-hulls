@@ -79,6 +79,20 @@ export async function concrete(mod: Mod) {
     createShapeVariants(block, model);
 }
 
+export async function smoothTile(mod: Mod) {
+    const block = mod.createBlock("smooth_tile");
+    block.createDefaultLangKey().addTranslation("Smooth Tile", LangKeyLanguage.en_us);
+
+    const model = mod.createBlockModel("smooth_tile");
+    model.setParent(new Identifier("base", "cube"));
+    
+    const smoothTileTexture = await Texture.loadFromFile("smoothTile", "./assets/textures/smoothTile.png");
+
+    model.addTextureOverride(smoothTileTexture, "all");
+
+    createShapeVariants(block, model);
+}
+
 export async function industrialFan(mod: Mod) {
     const block = mod.createBlock("industrial_fan");
 

@@ -17,7 +17,7 @@
   "dependencies": {
     "@types/numeric": "^1.2.6",
     "@types/three": "^0.173.0",
-    "cosmic-reach-dag": "^1.2.0",
+    "cosmic-reach-dag": "file:../../utils/cosmic-reach/cosmic-reach-dynamic-asset-generator",
     "numeric": "^1.2.6",
     "three": "^0.173.0"
   },

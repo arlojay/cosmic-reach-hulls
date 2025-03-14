@@ -1,4 +1,4 @@
-import { Block, BlockModel, BlockState, Direction, Directions, Identifier, loadBlockbenchModel, Mod, Writer } from "cosmic-reach-dag";
+import { Block, BlockModel, BlockState, Direction, Directions, Identifier, loadBlockbenchModel, Mod, Texture, Writer } from "cosmic-reach-dag";
 import { cablePaneling, corrugatedMetal, grate, industrialFan, industrialBulb, railing, structuralMetal, grateStairs, scaffolding, concrete } from "./blocks";
 import { pipes } from "./pipe";
 
