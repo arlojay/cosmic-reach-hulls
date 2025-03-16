@@ -1,5 +1,22 @@
-import { Directions, Identifier, LangKeyLanguage, loadBlockbenchModel, Mod, Texture } from "cosmic-reach-dag";
+/*
+Copyright 2025 arlojay
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+import { Identifier, LangKeyLanguage, loadBlockbenchModel, Mod, Texture } from "cosmic-reach-dag";
 import { createNativeRotations, createOmnidirectionalRotations, createShapeVariants } from ".";
+import { sixConnectedBlock } from "./connectedBlock";
 
 export async function cablePaneling(mod: Mod) {
     const block = mod.createBlock("cable_paneling");
@@ -9,9 +26,12 @@ export async function cablePaneling(mod: Mod) {
         lightAttenuation: 1,
         isOpaque: false
     };
+    const model = await loadBlockbenchModel(mod, "cable_paneling", "./assets/models/cable-paneling.bbmodel");    
+    model.usesTransparency = true;
+    
     createNativeRotations(
         block,
-        await loadBlockbenchModel(mod, "cable_paneling", "./assets/models/cable-paneling.bbmodel")
+        model
     );
 }
 
@@ -40,8 +60,7 @@ export async function grate(mod: Mod) {
 
     const model = await loadBlockbenchModel(mod, "grate", "./assets/models/grate.bbmodel");
 
-    model.cullsSelf = true;
-    model.transparent = true;
+    model.usesTransparency = true;
 
     createOmnidirectionalRotations(block, model);
 }
@@ -86,11 +105,27 @@ export async function smoothTile(mod: Mod) {
     const model = mod.createBlockModel("smooth_tile");
     model.setParent(new Identifier("base", "cube"));
     
-    const smoothTileTexture = await Texture.loadFromFile("smoothTile", "./assets/textures/smoothTile.png");
+    const smoothTileTexture = await Texture.loadFromFile("smooth-tile", "./assets/textures/smooth-tile.png");
 
     model.addTextureOverride(smoothTileTexture, "all");
 
     createShapeVariants(block, model);
+}
+
+export async function connectedTile(mod: Mod) {
+    const block = mod.createBlock("tank");
+    block.createDefaultLangKey().addTranslation("Tank", LangKeyLanguage.en_us);
+
+    block.fallbackParams = {
+        lightAttenuation: 3,
+        isOpaque: false
+    };
+
+    await sixConnectedBlock(mod, block, "./assets/textures/tank.png");
+
+    for(const state of block.getStates()) {
+        state.model.usesTransparency = true;
+    }
 }
 
 export async function industrialFan(mod: Mod) {
@@ -104,8 +139,7 @@ export async function industrialFan(mod: Mod) {
 
     const model = await loadBlockbenchModel(mod, "industrial_fan", "./assets/models/industrial-fan.bbmodel");
 
-    model.cullsSelf = true;
-    model.transparent = true;
+    model.usesTransparency = true;
 
     createOmnidirectionalRotations(block, model);
 }
@@ -122,6 +156,7 @@ export async function railing(mod: Mod) {
         edge.createDefaultLangKey().addTranslation("Edge Railing", LangKeyLanguage.en_us);
         
         const model = await loadBlockbenchModel(mod, "railing_edge", "./assets/models/railing-edge.bbmodel");
+        model.usesTransparency = true;
         createNativeRotations(edge, model);
     }
 
@@ -131,6 +166,7 @@ export async function railing(mod: Mod) {
         straight.createDefaultLangKey().addTranslation("Straight Railing", LangKeyLanguage.en_us);
 
         const model = await loadBlockbenchModel(mod, "railing_straight", "./assets/models/railing-straight.bbmodel");
+        model.usesTransparency = true;
         createNativeRotations(straight, model);
     }
 
@@ -140,6 +176,7 @@ export async function railing(mod: Mod) {
         corner.createDefaultLangKey().addTranslation("Corner Railing", LangKeyLanguage.en_us);
 
         const model = await loadBlockbenchModel(mod, "railing_corner", "./assets/models/railing-corner.bbmodel");
+        model.usesTransparency = true;
         createNativeRotations(corner, model);
     }
 
@@ -149,6 +186,7 @@ export async function railing(mod: Mod) {
         end.createDefaultLangKey().addTranslation("End Railing", LangKeyLanguage.en_us);
 
         const model = await loadBlockbenchModel(mod, "railing_end", "./assets/models/railing-end.bbmodel");
+        model.usesTransparency = true;
         createNativeRotations(end, model);
     }
 }
@@ -167,8 +205,7 @@ export async function industrialBulb(mod: Mod) {
     const model = await loadBlockbenchModel(mod, "industrial_bulb", "./assets/models/industrial-bulb.bbmodel");
     model.rotateX(90);
 
-    model.cullsSelf = true;
-    model.transparent = true;
+    model.usesTransparency = true;
 
     createOmnidirectionalRotations(block, model);
 }
@@ -218,9 +255,6 @@ export async function scaffolding(mod: Mod) {
 
     const verticalModel = await loadBlockbenchModel(mod, "scaffolding", "./assets/models/scaffolding.bbmodel");
 
-    verticalModel.cullsSelf = true;
-    verticalModel.transparent = true;
-
     const verticalState = verticalScaffolding.createState("default");
     verticalState.setBlockModel(verticalModel);
 
@@ -233,7 +267,6 @@ export async function scaffolding(mod: Mod) {
     const horizontalModel = await loadBlockbenchModel(mod, "horizontal_scaffolding", "./assets/models/horizontal-scaffolding.bbmodel");
 
     horizontalModel.cullsSelf = true;
-    horizontalModel.transparent = true;
 
     createNativeRotations(horizontalScaffolding, horizontalModel);
 }
@@ -249,9 +282,6 @@ export async function pipes(mod: Mod) {
     const straightPipeModel = await loadBlockbenchModel(mod, "brass_pipe_straight", "./assets/models/brass-pipe.bbmodel");
     straightPipeModel.rotateX(90);
 
-    straightPipeModel.cullsSelf = true;
-    straightPipeModel.transparent = true;
-
     createOmnidirectionalRotations(straightPipe, straightPipeModel);
 
 
@@ -265,9 +295,6 @@ export async function pipes(mod: Mod) {
 
     const cornerPipeModel = await loadBlockbenchModel(mod, "brass_pipe_corner", "./assets/models/brass-pipe-corner.bbmodel");
     cornerPipeModel.rotateX(90);
-
-    cornerPipeModel.cullsSelf = true;
-    cornerPipeModel.transparent = true;
 
     createOmnidirectionalRotations(cornerPipe, cornerPipeModel);
 }

@@ -1,9 +1,25 @@
-import { Block, BlockModel, BlockState, Direction, Directions, Identifier, loadBlockbenchModel, Mod, Texture, Writer } from "cosmic-reach-dag";
-import { cablePaneling, corrugatedMetal, grate, industrialFan, industrialBulb, railing, structuralMetal, grateStairs, scaffolding, concrete } from "./blocks";
+/*
+Copyright 2025 arlojay
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+import { Block, BlockModel, BlockState, Direction, Directions, Identifier, loadBlockbenchModel, Mod, Writer } from "cosmic-reach-dag";
+import { cablePaneling, corrugatedMetal, grate, industrialFan, industrialBulb, railing, structuralMetal, grateStairs, scaffolding, concrete, smoothTile, connectedTile } from "./blocks";
 import { pipes } from "./pipe";
 
 const mod = new Mod("hulls");
-const writer = new Writer(mod, false);
+const writer = new Writer(mod, true);
 
 main();
 
@@ -227,12 +243,15 @@ async function main() {
     await structuralMetal(mod);
     await grate(mod);
     await corrugatedMetal(mod);
+    await smoothTile(mod);
+    await connectedTile(mod);
     await industrialFan(mod);
     await railing(mod);
     await industrialBulb(mod);
     await grateStairs(mod);
     await scaffolding(mod);
     await concrete(mod);
+
 
     await pipes(mod);
 

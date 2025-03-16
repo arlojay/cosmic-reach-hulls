@@ -15,14 +15,14 @@
   ],
   "license": "Apache-2.0 license",
   "dependencies": {
-    "@types/numeric": "^1.2.6",
-    "@types/three": "^0.173.0",
-    "cosmic-reach-dag": "file:../../utils/cosmic-reach/cosmic-reach-dynamic-asset-generator",
-    "numeric": "^1.2.6",
+    "canvas": "^3.1.0",
+    "cosmic-reach-dag": "file:../../utils/cosmic-reach/cosmic-reach-dynamic-asset-generator/",
     "three": "^0.173.0"
   },
   "devDependencies": {
     "@types/node": "^22.13.4",
+    "@types/numeric": "^1.2.6",
+    "@types/three": "^0.174.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.3"
   }

@@ -1,5 +1,20 @@
-import { addDefaultEvents, BlockEventPredicate, BlockModel, DirectionList, Directions, loadBlockbenchModel, LogicPredicate, Mod, RunTriggerAction, SetBlockStateParamsAction } from "cosmic-reach-dag";
-import { appendFileSync } from "fs";
+/*
+Copyright 2025 arlojay
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+import { BlockEventPredicate, BlockModel, DirectionList, Directions, Identifier, loadBlockbenchModel, LogicPredicate, Mod, SetBlockStateParamsAction } from "cosmic-reach-dag";
 import { Vector3, Euler } from "three";
 
 
@@ -59,10 +74,6 @@ function findBestTransform(inputDirections: Vector3[][], directions: Vector3[]) 
         for(const euler of allPossibleRotations) {
             const transformedVectors = input.map(v => rotateGlobal(v.clone(), euler));
             if(isSimilar(transformedVectors, directions)) {
-                console.log("Pipe with " + directions.length + " connection(s)");
-                console.log(transformedVectors);
-                console.log(directions);
-                console.log(euler);
                 working.push({ input, euler: euler.clone() });
             }
         }
@@ -91,37 +102,21 @@ function createPipeModel(modelListMap: PipeModelList, directions: DirectionList,
     const bestModel = modelMap.get(bestTransform.input);
 
     const rotation = new Vector3().copy(bestTransform.euler);
-    
-    appendFileSync("./pipeout.txt",
-        "Rotating " +
-        bestModel.model.id.toString() + 
-        " [" +
-            bestModel.directions.map(v =>
-                "\n\t{ " +
-                v.toArray().join(", ") +
-                " }"
-            ).join(",") +
-        "\n] to directions [" +
-            directions.array().map(v =>
-                "\n\t{ " +
-                v.array().join(", ") +
-                " }"
-            ).join(",") +
-        "\n]\n" +
-        "Using rotation: {\n\t" +
-        Math.round(-rotation.x * 180 / Math.PI) + ",\n\t" +
-        Math.round(rotation.y * 180 / Math.PI) + ",\n\t" +
-        Math.round(rotation.z * 180 / Math.PI) + "\n" +
-        "}" +
-        "\n".repeat(3)
-    );
 
     const clonedModel = bestModel.model.clone(namespace + "/" + directions.toString());
     clonedModel.rotateX(Math.round(-rotation.x * 180 / Math.PI));
     clonedModel.rotateY(Math.round(rotation.y * 180 / Math.PI));
     clonedModel.rotateZ(Math.round(-rotation.z * 180 / Math.PI));
 
-    return clonedModel;
+    return {
+        model: bestModel.model,
+        transformedModel: clonedModel,
+        rotation: new Vector3(
+            Math.round(-rotation.x * 180 / Math.PI),
+            Math.round(rotation.y * 180 / Math.PI),
+            Math.round(-rotation.z * 180 / Math.PI)
+        )
+    };
 }
 
 
@@ -200,13 +195,12 @@ export async function pipes(mod: Mod) {
     };
 
     const triggerSheet = mod.createTriggerSheet(baseId);
-    addDefaultEvents(triggerSheet);
+    triggerSheet.setParent(new Identifier("base", "block_events_default"));
 
-    triggerSheet.addTrigger("hulls:update_connections", new SetBlockStateParamsAction({
-        params: defaultParams
-    }));
+    triggerSheet.onUpdate(new SetBlockStateParamsAction({ params: defaultParams }));
+    
     for(const direction of Directions.cardinals) {
-        triggerSheet.addTrigger("hulls:update_connections",
+        triggerSheet.onUpdate(
             new SetBlockStateParamsAction({
                 params: { [direction.name]: "true" }
             })
@@ -227,20 +221,7 @@ export async function pipes(mod: Mod) {
                 ]
             }))
         );
-
-        triggerSheet.addTrigger("onPlace", new RunTriggerAction({
-            triggerId: "hulls:update_connections",
-            xOff: direction.x, yOff: direction.y, zOff: direction.z
-        }));
-        triggerSheet.addTrigger("onBreak", new RunTriggerAction({
-            triggerId: "hulls:update_connections",
-            xOff: direction.x, yOff: direction.y, zOff: direction.z
-        }));
     }
-
-    triggerSheet.addTrigger("onPlace", new RunTriggerAction({
-        triggerId: "hulls:update_connections"
-    }));
 
     block.fallbackParams = {
         catalogHidden: true,
@@ -258,6 +239,9 @@ export async function pipes(mod: Mod) {
             state.params.set(direction.name, "true");
         }
 
-        state.setBlockModel(createPipeModel(models, directionList, baseId));
+        const { model, transformedModel, rotation } = createPipeModel(models, directionList, baseId);
+        state.setBlockModel(transformedModel);
+        // state.setBlockModel(model);
+        // state.rotation = rotation.toArray();
     }
 }
