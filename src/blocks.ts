@@ -14,9 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { Identifier, LangKeyLanguage, loadBlockbenchModel, Mod, Texture } from "cosmic-reach-dag";
-import { createNativeRotations, createOmnidirectionalRotations, createShapeVariants } from ".";
-import { sixConnectedBlock } from "./connectedBlock";
+import { BlockModel, Directions, Identifier, LangKeyLanguage, loadBlockbenchModel, Mod, RunTriggerAction, SetBlockStateParamsAction, Texture } from "cosmic-reach-dag";
+import { createNativeRotations, createOmnidirectionalRotations, createShapeVariants, getRotationFromDirection } from ".";
+import { connectedModelBlock, sixConnectedBlock } from "./connectedBlock";
+import { inspect } from "util";
 
 export async function cablePaneling(mod: Mod) {
     const block = mod.createBlock("cable_paneling");
@@ -59,6 +60,9 @@ export async function grate(mod: Mod) {
     };
 
     const model = await loadBlockbenchModel(mod, "grate", "./assets/models/grate.bbmodel");
+    // delete (model as any).mod;
+    // delete (model as any).id;
+    // console.log(inspect(model, false, 5));
 
     model.usesTransparency = true;
 
@@ -116,15 +120,15 @@ export async function connectedTile(mod: Mod) {
     const block = mod.createBlock("tank");
     block.createDefaultLangKey().addTranslation("Tank", LangKeyLanguage.en_us);
 
-    block.fallbackParams = {
-        lightAttenuation: 3,
-        isOpaque: false
-    };
-
-    await sixConnectedBlock(mod, block, "./assets/textures/tank.png");
+    await connectedModelBlock(
+        mod, block,
+        "./assets/models/tank/",
+        "./assets/models/tank-axes/",
+    )
 
     for(const state of block.getStates()) {
         state.model.usesTransparency = true;
+        state.model.cullsSelf = false;
     }
 }
 
@@ -297,4 +301,60 @@ export async function pipes(mod: Mod) {
     cornerPipeModel.rotateX(90);
 
     createOmnidirectionalRotations(cornerPipe, cornerPipeModel);
+}
+
+export async function industrialSwitch(mod: Mod) {
+    const block = mod.createBlock("industrial_switch");
+    block.createDefaultLangKey().addTranslation("Industrial Switch", LangKeyLanguage.en_us);
+
+    block.fallbackParams = {
+        placementRules: "omnidirectional_towards",
+        catalogHidden: true,
+        isOpaque: false
+    }
+
+    const offModel = await loadBlockbenchModel(mod, "switch/off", "./assets/models/switch.bbmodel");
+    const onModel = await loadBlockbenchModel(mod, "switch/on", "./assets/models/switch-on.bbmodel");
+
+    for(const direction of Directions.nativeRotation) {
+        const cardinal = Directions.cardinals.vectorToDirection(direction);
+
+        const offState = block.createState({ power: "off", direction: direction.name });
+        offState.setBlockModel(offModel);
+        offState.rotation[1] = getRotationFromDirection(direction);
+
+        offState.tags.push("cables:connectable/" + cardinal.inverse());
+        if(direction.x > 0) offState.catalogHidden = false;
+
+        const offSheet = offState.createTriggerSheet();
+        offSheet.setParent(new Identifier("base", "block_events_default"));
+        offSheet.addTrigger("onInteract",
+            new SetBlockStateParamsAction({
+                params: { power: "on" }
+            }),
+            new RunTriggerAction({
+                triggerId: "cables:add_power/" + cardinal.inverse(),
+                xOff: direction.x, yOff: direction.y, zOff: direction.z
+            })
+        )
+
+        const onState = block.createState({ power: "on", direction: direction.name });
+        onState.setBlockModel(onModel);
+        onState.rotation[1] = getRotationFromDirection(direction);
+
+        onState.tags.push("cables:powering/" + cardinal.inverse());
+        onState.tags.push("cables:connectable/" + cardinal.inverse());
+        
+        const onSheet = onState.createTriggerSheet();
+        onSheet.setParent(new Identifier("base", "block_events_default"));
+        onSheet.addTrigger("onInteract",
+            new SetBlockStateParamsAction({
+                params: { power: "off" }
+            }),
+            new RunTriggerAction({
+                triggerId: "cables:remove_power/" + cardinal.inverse(),
+                xOff: direction.x, yOff: direction.y, zOff: direction.z
+            })
+        )
+    }
 }

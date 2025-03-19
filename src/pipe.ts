@@ -105,7 +105,7 @@ function createPipeModel(modelListMap: PipeModelList, directions: DirectionList,
 
     const clonedModel = bestModel.model.clone(namespace + "/" + directions.toString());
     clonedModel.rotateX(Math.round(-rotation.x * 180 / Math.PI));
-    clonedModel.rotateY(Math.round(rotation.y * 180 / Math.PI));
+    clonedModel.rotateY(Math.round(-rotation.y * 180 / Math.PI));
     clonedModel.rotateZ(Math.round(-rotation.z * 180 / Math.PI));
 
     return {
@@ -113,7 +113,7 @@ function createPipeModel(modelListMap: PipeModelList, directions: DirectionList,
         transformedModel: clonedModel,
         rotation: new Vector3(
             Math.round(-rotation.x * 180 / Math.PI),
-            Math.round(rotation.y * 180 / Math.PI),
+            Math.round(-rotation.y * 180 / Math.PI),
             Math.round(-rotation.z * 180 / Math.PI)
         )
     };

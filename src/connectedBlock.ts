@@ -14,9 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { addDefaultEvents, Block, BlockEventPredicate, Directions, Mod, SetBlockStateParamsAction } from "cosmic-reach-dag";
+import { addDefaultEvents, Block, BlockEventPredicate, BlockModel, Direction, DirectionList, Directions, loadBlockbenchModel, Mod, SetBlockStateParamsAction } from "cosmic-reach-dag";
 import { SixConnectingTexture } from "./connectingTexture";
+import path from "path";
+import fs from "node:fs";
 
+
+const face2d = new DirectionList([
+    new Direction("up", 0, 1, 0),
+    new Direction("down", 0, -1, 0),
+    new Direction("left", -1, 0, 0),
+    new Direction("right", 1, 0, 0)
+]);
 
 export async function sixConnectedBlock(mod: Mod, block: Block, texturePath: string) {
     const id = block.id.getItem();
@@ -89,42 +98,37 @@ export async function sixConnectedBlock(mod: Mod, block: Block, texturePath: str
     }
 }
 
-
-/*
-export async function fourteenConnectedBlock(mod: Mod, block: Block, texturePath: string) {
+export async function connectedModelBlock(
+    mod: Mod, block: Block,
+    modelDirectory: string,
+    upModelDirectory: string = modelDirectory,
+    downModelDirectory: string = upModelDirectory
+) {
     const id = block.id.getItem();
     const sheet = mod.createTriggerSheet(id);
     addDefaultEvents(sheet);
 
-    sheet.onUpdate(new SetBlockStateParamsAction({
-        params: {
-            a: "f", b: "f", c: "f", d: "f",
-            e: "f", f: "f", g: "f", h: "f",
-            i: "f", j: "f", k: "f", l: "f",
-            m: "f", n: "f", o: "f", p: "f",
-            q: "f", r: "f",
-        }
-    }));
+    sheet.onUpdate(
+        new SetBlockStateParamsAction({
+            params: {
+                north: "false",
+                east: "false",
+                south: "false",
+                west: "false",
+                up: "false",
+                down: "false"
+            }
+        })
+    );
 
-    const paramMapping: Map<Direction, string> = new Map;
-    {
-        let i = 0;
-        const chars = "abcdefghijklmnopqr";
-        for(const direction of Directions.rings) {
-            paramMapping.set(direction, chars[i++]);
-        }
-    }
-
-    block.fallbackParams = {
-        tags: [ block.id.toString() ],
-        catalogHidden: true,
-        blockEventsId: sheet.getTriggerSheetId()
-    };
+    block.fallbackParams.tags ??= [];
+    block.fallbackParams.tags.push(block.id.toString());
+    block.fallbackParams.catalogHidden = true;
     
-    for(const direction of Directions.rings) {
+    for(const direction of Directions.cardinals) {
         sheet.onUpdate(
             new SetBlockStateParamsAction({
-                params: { [paramMapping.get(direction)]: "t" }
+                params: { [direction.name]: "true" }
             })
             .if(new BlockEventPredicate({
                 block_at: {
@@ -135,105 +139,77 @@ export async function fourteenConnectedBlock(mod: Mod, block: Block, texturePath
         );
     }
 
-    const baseModel = mod.createBlockModel(id + "/base");
-    const baseCuboid = baseModel.createCuboid();
-    baseCuboid.north.texture = new Texture("n", new Identifier("base", "debug"));
-    baseCuboid.south.texture = new Texture("s", new Identifier("base", "debug"));
-    baseCuboid.east.texture = new Texture("e", new Identifier("base", "debug"));
-    baseCuboid.west.texture = new Texture("w", new Identifier("base", "debug"));
-    baseCuboid.up.texture = new Texture("u", new Identifier("base", "debug"));
-    baseCuboid.down.texture = new Texture("d", new Identifier("base", "debug"));
-    
-    const texture = await FourteenConnectingTexture.loadFromFile(id, texturePath);
-    for(const combination of Directions.rings.combinations()) {
-        const params = {};
-        for(const [ direction, shorthand ] of paramMapping) {
-            params[shorthand] = combination.has(direction) ? "t" : "f";
-        }
+    const loadedModels: Map<string, BlockModel> = new Map;
+    async function getModel(up: boolean, down: boolean, left: boolean, right: boolean, directory: string, _recursive?: boolean): Promise<BlockModel> {
+        let modelDirections = new Array;
+        if(up) modelDirections.push("up");
+        if(down) modelDirections.push("down");
+        if(left) modelDirections.push("left");
+        if(right) modelDirections.push("right");
 
-        const state = block.createState(params);
+        const modelName = modelDirections.length == 0 ? "none" : modelDirections.join("-");
+        
+        const fileName = path.join(directory, modelName + ".bbmodel");
+
+        if(loadedModels.has(fileName)) return loadedModels.get(fileName);
+
+        if(fs.existsSync(fileName)) {
+            const model = await loadBlockbenchModel(mod, id + "/" + modelName, fileName);
+            loadedModels.set(fileName, model);
+
+            return model;
+        } else if(!_recursive) {
+            try {
+                console.log("No model found for " + fileName + "; defaulting to none.bbmodel");
+                
+                const defaultModel = await getModel(false, false, false, false, directory, true);
+                loadedModels.set(fileName, defaultModel);
+
+                return defaultModel;
+            } catch(e) {
+                throw new Error("Cannot find a model for " + fileName, { cause: e });
+            }
+        } else {
+            throw new Error("Cannot find a default model for models in directory " + directory);
+        }
+    }
+
+    for await(const combination of Directions.cardinals.combinations()) {
+        const north = combination.hasDirection("north");
+        const east = combination.hasDirection("east");
+        const south = combination.hasDirection("south");
+        const west = combination.hasDirection("west");
+        const up = combination.hasDirection("up");
+        const down = combination.hasDirection("down");
+
+        const state = block.createState({
+            north: north.toString(),
+            east: east.toString(),
+            south: south.toString(),
+            west: west.toString(),
+            up: up.toString(),
+            down: down.toString()
+        });
         if(combination.size == 0) {
             state.catalogHidden = false;
-            state.setTriggerSheet(sheet);
         }
 
-        const shortCombination = combination.array().map(v => paramMapping.get(v)).join("");
+        state.setTriggerSheet(sheet);
+        
 
-        const model = state.createBlockModel(id + "/" + shortCombination);
-        model.setParent(baseModel);
-
-        model.addTextureOverride(texture.getTexture(
-            combination.hasDirection("up"),
-            combination.hasDirection("down"),
-            combination.hasDirection("east"),
-            combination.hasDirection("west"),
-
-            
-            combination.hasDirection("upwest"),
-            combination.hasDirection("upeast"),
-            combination.hasDirection("downwest"),
-            combination.hasDirection("downeast")
-        ), "n");
-        model.addTextureOverride(texture.getTexture(
-            combination.hasDirection("up"),
-            combination.hasDirection("down"),
-            combination.hasDirection("south"),
-            combination.hasDirection("north"),
-
-            
-            combination.hasDirection("southup"),
-            combination.hasDirection("northup"),
-            combination.hasDirection("southdown"),
-            combination.hasDirection("northdown")
-        ), "e");
-        model.addTextureOverride(texture.getTexture(
-            combination.hasDirection("up"),
-            combination.hasDirection("down"),
-            combination.hasDirection("west"),
-            combination.hasDirection("east"),
-
-            
-            combination.hasDirection("upeast"),
-            combination.hasDirection("upwest"),
-            combination.hasDirection("downeast"),
-            combination.hasDirection("downwest")
-        ), "s");
-        model.addTextureOverride(texture.getTexture(
-            combination.hasDirection("up"),
-            combination.hasDirection("down"),
-            combination.hasDirection("north"),
-            combination.hasDirection("south"),
-
-            
-            combination.hasDirection("northup"),
-            combination.hasDirection("southup"),
-            combination.hasDirection("northdown"),
-            combination.hasDirection("southdown")
-        ), "w");
-        model.addTextureOverride(texture.getTexture(
-            combination.hasDirection("north"),
-            combination.hasDirection("south"),
-            combination.hasDirection("west"),
-            combination.hasDirection("east"),
-
-            
-            combination.hasDirection("northwest"),
-            combination.hasDirection("northeast"),
-            combination.hasDirection("southwest"),
-            combination.hasDirection("southeast")
-        ), "u");
-        model.addTextureOverride(texture.getTexture(
-            combination.hasDirection("south"),
-            combination.hasDirection("north"),
-            combination.hasDirection("west"),
-            combination.hasDirection("east"),
-
-            
-            combination.hasDirection("southwest"),
-            combination.hasDirection("southeast"),
-            combination.hasDirection("northwest"),
-            combination.hasDirection("northeast")
-        ), "d");
+        const northModel = await getModel(up, down, east, west, modelDirectory);
+        const eastModel = await getModel(up, down, south, north, modelDirectory);
+        const southModel = await getModel(up, down, west, east, modelDirectory);
+        const westModel = await getModel(up, down, north, south, modelDirectory);
+        const upModel = await getModel(north, south, west, east, upModelDirectory);
+        const downModel = await getModel(south, north, west, east, downModelDirectory);
+        
+        const model = state.createBlockModel();
+        if(!north) model.addModel(northModel.clone());
+        if(!east) model.addModel(eastModel.clone().rotateY(90));
+        if(!south) model.addModel(southModel.clone().rotateY(180));
+        if(!west) model.addModel(westModel.clone().rotateY(-90));
+        if(!up) model.addModel(upModel.clone().rotateX(-90));
+        if(!down) model.addModel(downModel.clone().rotateX(90));
     }
 }
-*/

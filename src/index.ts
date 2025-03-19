@@ -14,12 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { Block, BlockModel, BlockState, Direction, Directions, Identifier, loadBlockbenchModel, Mod, Writer } from "cosmic-reach-dag";
-import { cablePaneling, corrugatedMetal, grate, industrialFan, industrialBulb, railing, structuralMetal, grateStairs, scaffolding, concrete, smoothTile, connectedTile } from "./blocks";
+import { addDefaultEvents, Block, BlockModel, BlockState, Direction, Directions, Identifier, loadBlockbenchModel, LootDropAction, Mod, RunTriggerAction, Texture, Writer } from "cosmic-reach-dag";
+import { cablePaneling, corrugatedMetal, grate, industrialFan, industrialBulb, railing, structuralMetal, grateStairs, scaffolding, concrete, smoothTile, connectedTile, industrialSwitch } from "./blocks";
 import { pipes } from "./pipe";
 
 const mod = new Mod("hulls");
-const writer = new Writer(mod, true);
+const writer = new Writer(mod, false);
 
 main();
 
@@ -31,10 +31,7 @@ export function createNativeRotations(block: Block, model: BlockModel) {
         state.setBlockModel(model);
         state.placementRules = "directional_towards";
 
-        if(direction.z > 0) state.rotXZ = 180;
-        if(direction.x < 0) state.rotXZ = 270;
-        if(direction.z < 0) state.rotXZ = 0;
-        if(direction.x > 0) state.rotXZ = 90;
+        state.rotation[1] = getRotationFromDirection(direction);
 
         if(direction.x == 1) {
             block.fallbackParams.dropId = state.getFullId();
@@ -43,8 +40,16 @@ export function createNativeRotations(block: Block, model: BlockModel) {
     }
 }
 
+export function getRotationFromDirection(direction: Direction) {
+    if(direction.z > 0) return 180;
+    if(direction.x < 0) return 270;
+    if(direction.z < 0) return 0;
+    if(direction.x > 0) return 90;
+
+    return 0;
+}
+
 export function createOmnidirectionalRotations(block: Block, model: BlockModel, defaultDirection: Direction = Directions.omnidirectionalRotation.getDirection("PosY")) {
-    console.log(defaultDirection);
     block.fallbackParams.catalogHidden = true;
 
     const upModel = model.clone(model.id.getItem() + "_pos-y").rotateX(-90);
@@ -59,10 +64,7 @@ export function createOmnidirectionalRotations(block: Block, model: BlockModel, 
         } else {
             state.setBlockModel(model);
             
-            if(direction.z > 0) state.rotXZ = 180;
-            if(direction.x < 0) state.rotXZ = 270;
-            if(direction.z < 0) state.rotXZ = 0;
-            if(direction.x > 0) state.rotXZ = 90;
+            state.rotation[1] = getRotationFromDirection(direction);
         }
         
         if(direction.is(defaultDirection)) {
@@ -111,7 +113,7 @@ export async function createFixedSlabShapes(blockShape: Block) {
         const state = blockShape.createState({ slab_type: "verticalNegX" });
         state.setBlockModel(slabVerticalModel);
         defaultVerticalSlabs(state);
-        state.rotXZ = 90;
+        state.rotation[1] = 90;
         state.catalogHidden = false;
         state.allowSwapping = true;
         slabVertical.addIncludes(generator.createTemplatedGenerator(state));
@@ -120,14 +122,14 @@ export async function createFixedSlabShapes(blockShape: Block) {
         const state = blockShape.createState({ slab_type: "verticalNegZ" });
         state.setBlockModel(slabVerticalModel);
         defaultVerticalSlabs(state);
-        state.rotXZ = 180;
+        state.rotation[1] = 180;
         slabVertical.addIncludes(generator.createTemplatedGenerator(state));
     }
     {
         const state = blockShape.createState({ slab_type: "verticalPosX" });
         state.setBlockModel(slabVerticalModel);
         defaultVerticalSlabs(state);
-        state.rotXZ = 270;
+        state.rotation[1] = 270;
         slabVertical.addIncludes(generator.createTemplatedGenerator(state));
     }
 
@@ -179,7 +181,7 @@ export async function createFixedStairShapes(blockShape: Block) {
         const state = blockShape.createState({ stair_type: "bottom_NegX" });
         state.setBlockModel(stairBottomModel);
         defaultStairs(state);
-        state.rotXZ = 90;
+        state.rotation[1] = 90;
         state.catalogHidden = false;
         state.allowSwapping = true;
         stairsBottom.addIncludes(generator.createTemplatedGenerator(state));
@@ -188,14 +190,14 @@ export async function createFixedStairShapes(blockShape: Block) {
         const state = blockShape.createState({ stair_type: "bottom_NegZ" });
         state.setBlockModel(stairBottomModel);
         defaultStairs(state);
-        state.rotXZ = 180;
+        state.rotation[1] = 180;
         stairsBottom.addIncludes(generator.createTemplatedGenerator(state));
     }
     {
         const state = blockShape.createState({ stair_type: "bottom_PosX" });
         state.setBlockModel(stairBottomModel);
         defaultStairs(state);
-        state.rotXZ = 270;
+        state.rotation[1] = 270;
         stairsBottom.addIncludes(generator.createTemplatedGenerator(state));
     }
 
@@ -210,21 +212,21 @@ export async function createFixedStairShapes(blockShape: Block) {
         const state = blockShape.createState({ stair_type: "top_NegX" });
         state.setBlockModel(stairTopModel);
         defaultStairs(state);
-        state.rotXZ = 90;
+        state.rotation[1] = 90;
         stairsTop.addIncludes(generator.createTemplatedGenerator(state));
     }
     {
         const state = blockShape.createState({ stair_type: "top_NegZ" });
         state.setBlockModel(stairTopModel);
         defaultStairs(state);
-        state.rotXZ = 180;
+        state.rotation[1] = 180;
         stairsTop.addIncludes(generator.createTemplatedGenerator(state));
     }
     {
         const state = blockShape.createState({ stair_type: "top_PosX" });
         state.setBlockModel(stairTopModel);
         defaultStairs(state);
-        state.rotXZ = 270;
+        state.rotation[1] = 270;
         stairsTop.addIncludes(generator.createTemplatedGenerator(state));
     }
 }
@@ -251,6 +253,7 @@ async function main() {
     await grateStairs(mod);
     await scaffolding(mod);
     await concrete(mod);
+    await industrialSwitch(mod);
 
 
     await pipes(mod);
